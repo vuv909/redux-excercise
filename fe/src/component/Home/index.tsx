@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "../Navbar";
 import ListOfProduct from "../ListOfProducts";
@@ -6,55 +6,89 @@ import { getProducts } from "../../services/product.api";
 import { LIMIT } from "../../constant/index,";
 import { useAppDispatch } from "../../hooks/hooks/hook";
 import { ProductAction } from "../../redux/actions/product.action";
+import {
+  getProduct,
+  getProductLoading,
+} from "../../redux/reducers/product.reducer";
 
 function Home() {
-  const ref = useRef<HTMLInputElement | null>(null);
   const [params, setParams] = useSearchParams();
   const dispatch = useAppDispatch();
+  const [activePage, setActivePage] = useState<number>(1);
 
   useEffect(() => {
     const paramsObject = Object.fromEntries(params.entries());
-    console.log(paramsObject);
     if (paramsObject.title && paramsObject.page) {
       const pageNumber = Number(paramsObject.page);
-
       if (!isNaN(pageNumber)) {
+        dispatch(getProductLoading(true));
         getProducts({
           title_like: paramsObject.title,
           _page: pageNumber,
           _limit: LIMIT,
-        }).then((res) => {
-          dispatch(
-            ProductAction(
-              res.data.data,
-              false,
-              res?.data?.pagination?._totalRows / res?.data?.pagination?._limit,
-              res?.data?.pagination?._page
-            )
-          );
-        });
+        })
+          .then((res) => {
+            dispatch(getProductLoading(false));
+            dispatch(
+              getProduct({
+                products: res.data.data,
+                totalPage:
+                  res.data.pagination._totalRows / res.data.pagination._limit,
+                activePage: res.data.pagination._page,
+              })
+            );
+          })
+          .catch((error) => {
+            dispatch(getProductLoading(false));
+          });
       }
     } else if (paramsObject.title) {
+      dispatch(getProductLoading(true));
       getProducts({
         title_like: paramsObject.title,
         _limit: LIMIT,
-      }).then((res) => {
-        dispatch(
-          ProductAction(
-            res.data.data,
-            false,
-            res?.data?.pagination?._totalRows / res?.data?.pagination?._limit,
-            res?.data?.pagination?._page
-          )
-        );
-      });
+      })
+        .then((res) => {
+          dispatch(getProductLoading(false));
+          dispatch(
+            getProduct({
+              products: res.data.data,
+              totalPage:
+                res.data.pagination._totalRows / res.data.pagination._limit,
+              activePage: res.data.pagination._page,
+            })
+          );
+        })
+        .catch((error) => {
+          dispatch(getProductLoading(false));
+        });
+    } else {
+      dispatch(getProductLoading(true));
+      getProducts({
+        _page: activePage,
+        _limit: LIMIT,
+      })
+        .then((res) => {
+          dispatch(getProductLoading(false));
+          dispatch(
+            getProduct({
+              products: res.data.data,
+              totalPage:
+                res.data.pagination._totalRows / res.data.pagination._limit,
+              activePage: res.data.pagination._page,
+            })
+          );
+        })
+        .catch((error) => {
+          dispatch(getProductLoading(false));
+        });
     }
-  }, []);
+  }, [params]);
 
   return (
     <div className="bg-gray-100">
-      <Navbar ref={ref} />
-      <ListOfProduct ref={ref} />
+      <Navbar params={params} setParams={setParams} />
+      <ListOfProduct params={params} setParams={setParams} />
     </div>
   );
 }

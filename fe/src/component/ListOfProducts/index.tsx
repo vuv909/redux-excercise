@@ -1,36 +1,23 @@
-import { forwardRef } from "react";
 import { useAppDispatch, useAppSelector } from "../../hooks/hooks/hook";
 import Button from "../../shared/button";
 import { TProduct } from "../../types/product.type";
 import Product from "../Product";
-import { getProducts } from "../../services/product.api";
-import { ProductAction } from "../../redux/actions/product.action";
-import { LIMIT } from "../../constant/index,";
+import { SetURLSearchParams } from "react-router-dom";
 
-export const ListOfProduct = forwardRef<HTMLInputElement>((props, ref) => {
-  const products = useAppSelector((state) => state.product.products);
-  const totalPage = useAppSelector((state) => state.product.totalPage);
-  const activePage = useAppSelector((state) => state.product.activePage);
-  const dispatch = useAppDispatch();
+type TProps = { params: URLSearchParams; setParams: SetURLSearchParams };
+
+export const ListOfProduct =(props : TProps) => {
+  const products = useAppSelector((state) => state.products.products);
+  const totalPage = useAppSelector((state) => state.products.totalPage);
+  const activePage = useAppSelector((state) => state.products.activePage);
 
   const changePage = (page: number) => {
+    const paramObject = Object.fromEntries(props.params.entries());
     if (activePage != page) {
-      const inputValue =
-        (ref as React.RefObject<HTMLInputElement>)?.current?.value.trim() || "";
-      getProducts({
-        title_like: inputValue,
-        _page: page,
-        _limit: LIMIT,
-      }).then((res) => {
-        dispatch(
-          ProductAction(
-            res.data.data,
-            false,
-            res?.data?.pagination?._totalRows / res?.data?.pagination?._limit,
-            res?.data?.pagination?._page
-          )
-        );
-      });
+      props.setParams({
+        ...paramObject,
+        page : page.toString()
+      })
     }
   };
 
@@ -57,6 +44,5 @@ export const ListOfProduct = forwardRef<HTMLInputElement>((props, ref) => {
       )}
     </>
   );
-});
-
+}
 export default ListOfProduct;
