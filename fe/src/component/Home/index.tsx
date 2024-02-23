@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "../Navbar";
 import ListOfProduct from "../ListOfProducts";
@@ -16,79 +16,108 @@ function Home() {
   const dispatch = useAppDispatch();
   const [activePage, setActivePage] = useState<number>(1);
 
+  const observer = useRef<IntersectionObserver>();
+
   useEffect(() => {
-    const paramsObject = Object.fromEntries(params.entries());
-    if (paramsObject.title && paramsObject.page) {
-      const pageNumber = Number(paramsObject.page);
-      if (!isNaN(pageNumber)) {
-        dispatch(getProductLoading(true));
-        getProducts({
-          title_like: paramsObject.title,
-          _page: pageNumber,
-          _limit: LIMIT,
-        })
-          .then((res) => {
-            dispatch(getProductLoading(false));
-            dispatch(
-              getProduct({
-                products: res.data.data,
-                totalPage:
-                  res.data.pagination._totalRows / res.data.pagination._limit,
-                activePage: res.data.pagination._page,
+    observer.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const paramsObject = Object.fromEntries(params.entries());
+            if (paramsObject.title && paramsObject.page) {
+              const pageNumber = Number(paramsObject.page);
+              if (!isNaN(pageNumber)) {
+                dispatch(getProductLoading(true));
+                getProducts({
+                  title_like: paramsObject.title,
+                  _page: pageNumber,
+                  _limit: LIMIT,
+                })
+                  .then((res) => {
+                    dispatch(getProductLoading(false));
+                    dispatch(
+                      getProduct({
+                        products: res.data.data,
+                        totalPage:
+                          res.data.pagination._totalRows /
+                          res.data.pagination._limit,
+                        activePage: res.data.pagination._page,
+                      })
+                    );
+                  })
+                  .catch((error) => {
+                    dispatch(getProductLoading(false));
+                  });
+              }
+            } else if (paramsObject.title) {
+              dispatch(getProductLoading(true));
+              getProducts({
+                title_like: paramsObject.title,
+                _limit: LIMIT,
               })
-            );
-          })
-          .catch((error) => {
-            dispatch(getProductLoading(false));
-          });
+                .then((res) => {
+                  dispatch(getProductLoading(false));
+                  dispatch(
+                    getProduct({
+                      products: res.data.data,
+                      totalPage:
+                        res.data.pagination._totalRows /
+                        res.data.pagination._limit,
+                      activePage: res.data.pagination._page,
+                    })
+                  );
+                })
+                .catch((error) => {
+                  dispatch(getProductLoading(false));
+                });
+            } else {
+              dispatch(getProductLoading(true));
+              getProducts({
+                _page: activePage,
+                _limit: LIMIT,
+              })
+                .then((res) => {
+                  dispatch(getProductLoading(false));
+                  dispatch(
+                    getProduct({
+                      products: res.data.data,
+                      totalPage:
+                        res.data.pagination._totalRows /
+                        res.data.pagination._limit,
+                      activePage: res.data.pagination._page,
+                    })
+                  );
+                })
+                .catch((error) => {
+                  dispatch(getProductLoading(false));
+                });
+            }
+          }
+        });
+      },
+      {
+        threshold: 1,
       }
-    } else if (paramsObject.title) {
-      dispatch(getProductLoading(true));
-      getProducts({
-        title_like: paramsObject.title,
-        _limit: LIMIT,
-      })
-        .then((res) => {
-          dispatch(getProductLoading(false));
-          dispatch(
-            getProduct({
-              products: res.data.data,
-              totalPage:
-                res.data.pagination._totalRows / res.data.pagination._limit,
-              activePage: res.data.pagination._page,
-            })
-          );
-        })
-        .catch((error) => {
-          dispatch(getProductLoading(false));
-        });
-    } else {
-      dispatch(getProductLoading(true));
-      getProducts({
-        _page: activePage,
-        _limit: LIMIT,
-      })
-        .then((res) => {
-          dispatch(getProductLoading(false));
-          dispatch(
-            getProduct({
-              products: res.data.data,
-              totalPage:
-                res.data.pagination._totalRows / res.data.pagination._limit,
-              activePage: res.data.pagination._page,
-            })
-          );
-        })
-        .catch((error) => {
-          dispatch(getProductLoading(false));
-        });
+    );
+
+    if(observer.current){
+      const listProductElement = document.getElementById("listProduct");
+      if(listProductElement){
+        observer.current.observe(listProductElement)
+      }
     }
+
+    return () => {
+      observer.current?.disconnect();
+    };
   }, [params]);
 
   return (
     <div className="bg-gray-100">
       <Navbar params={params} setParams={setParams} />
-      <ListOfProduct params={params} setParams={setParams} />
+      <div id="listProduct">
+        <ListOfProduct params={params} setParams={setParams} />
+      </div>
     </div>
   );
 }

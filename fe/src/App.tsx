@@ -1,9 +1,7 @@
-import { useRef } from "react";
 import "./App.css";
-import ListOfProduct from "./component/ListOfProducts";
-import Navbar from "./component/Navbar";
-import { RouterProvider, createBrowserRouter, useSearchParams } from "react-router-dom";
+import { RouterProvider, createBrowserRouter} from "react-router-dom";
 import Home from "./component/Home";
+import Form from "./component/Form";
 
 function App() {
   const router = createBrowserRouter([
@@ -11,6 +9,10 @@ function App() {
       path: "/",
       element: <Home/>,
     },
+    {
+      path: "/form",
+      element: <Form/>,
+    }
   ]);
 
   return (
