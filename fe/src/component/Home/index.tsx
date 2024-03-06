@@ -44,9 +44,15 @@ function Home() {
   }, [data, isLoading, isError]);
 
   return (
-    <div className="bg-gray-100">
-      <Navbar ref={ref} />
-      <ListOfProduct ref={ref} />
+    <div>
+      {isLoading ? (
+        <div>Loading ...</div>
+      ) : (
+        <div className="bg-gray-100">
+          <Navbar ref={ref} />
+          <ListOfProduct ref={ref} />
+        </div>
+      )}
     </div>
   );
 }
